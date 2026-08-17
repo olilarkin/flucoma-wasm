@@ -118,7 +118,13 @@ the same runtime, and the two packages are built to be used together.
 `{ sampleRate, numChannels, length, channelData, bitDepth }` with planar
 `Float32Array` channels, and both pass audio as 32-bit float WAV bytes. So the
 output of one is directly the input of the other — no conversion, no adapter,
-and no dependency between the packages:
+and no dependency between the packages.
+
+That is checked rather than assumed: `test/cdp-interop.mjs` runs both codecs
+against each other and asserts they encode to byte-identical files, read each
+other's output bit-exactly, and decode to the same object shape. It skips when
+cdp-wasm isn't installed (`CDP_WASM_PATH=../cdp-wasm npm test` to point it at a
+checkout).
 
 ```js
 import { CDP } from 'cdp-wasm';

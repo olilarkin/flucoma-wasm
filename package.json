@@ -33,7 +33,7 @@
     "build:wasm": "bash scripts/build-wasm.sh",
     "catalog": "node scripts/harvest-catalog.mjs",
     "build": "npm run build:wasm && npm run catalog",
-    "test": "node test/catalog.mjs && node test/wav.mjs && node test/run.mjs && node test/interop.mjs && node test/cli.mjs",
+    "test": "node test/catalog.mjs && node test/wav.mjs && node test/run.mjs && node test/interop.mjs && node test/cli.mjs && node test/cdp-interop.mjs",
     "typecheck": "npx -y --package typescript@5.7 tsc --project tsconfig.json"
   },
   "keywords": [
