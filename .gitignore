@@ -1,8 +1,24 @@
-bin
-build*
+# Native build output. `bin/*` rather than `bin` so the npm CLI entry point
+# below can be re-included — git cannot un-ignore a file inside an excluded
+# directory.
+bin/*
+!bin/fluid.js
+
+# Build directories. Anchored and directory-only: the bare `build*` this
+# replaces also matched scripts/build-wasm.sh, silently keeping the WebAssembly
+# build script out of the repository.
+/build*/
 winbuild
 **/build/*
 **/.DS_Store
 release-packaging/
 docs
 .vscode
+
+# WebAssembly build output — produced by `npm run build:wasm`. Not committed
+# (it is ~9 MB of binaries); the published npm tarball includes it via the
+# "files" field in package.json.
+/wasm/
+
+node_modules/
+*.tgz

@@ -1,0 +1,15 @@
+{
+  "// note": "Type-checks the hand-maintained .d.ts files. The package ships no JS-from-TS; this exists purely to validate the public type surface (see the `typecheck` npm script). The DOM lib supplies the Web Audio types (AudioBuffer, BaseAudioContext); no @types/node is needed, keeping the package zero-dependency.",
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2020", "DOM"],
+    "types": [],
+    "skipLibCheck": false,
+    "forceConsistentCasingInFileNames": true
+  },
+  "files": ["index.d.ts", "src/interop.d.ts"]
+}

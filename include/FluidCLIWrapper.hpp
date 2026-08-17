@@ -30,6 +30,16 @@ under the European Union’s Horizon 2020 research and innovation programme
 #include <utility>
 #include <vector>
 #include <bitset>
+
+// WebAssembly built without pthreads has no threads to hand the job to, so the
+// NRT clients have to run it on the calling thread. Opt in automatically; a
+// -pthread build (or any native build) keeps the threaded, progress-polling
+// path unchanged.
+#if defined(__EMSCRIPTEN__) && !defined(__EMSCRIPTEN_PTHREADS__) &&            \
+    !defined(FLUID_CLI_SYNCHRONOUS)
+#define FLUID_CLI_SYNCHRONOUS 1
+#endif
+
 namespace fluid {
 namespace client {
 
@@ -465,15 +475,26 @@ public:
     ClientType client(params, FluidContext());
     Result     result;
 
+#ifdef FLUID_CLI_SYNCHRONOUS
+    // Single-threaded builds (WebAssembly without pthreads). The job runs on
+    // the calling thread inside process(), which returns the final Result, and
+    // the adaptor has already torn its task down by the time we get it back —
+    // so checkProgress() would report kNoProcess and the polling loop below
+    // would spin forever. Skip it: there is nothing left to wait for.
+    client.setSynchronous(true);
     client.enqueue(params);
     result = client.process();
-    
+    if (result.ok()) std::cout << "100%\n";
+#else
+    client.enqueue(params);
+    result = client.process();
+
     double progress = 0.0;
 
     while(result.ok())
     {
         ProcessState state = client.checkProgress(result);
-      
+
         if (state == ProcessState::kDone || state == ProcessState::kDoneStillProcessing) {
           std::cout << "100%\n";
           break;
@@ -486,10 +507,11 @@ public:
             progress = newProgress;
           }
           using namespace std::chrono_literals;
-          std::this_thread::sleep_for(20ms); 
-          continue; 
+          std::this_thread::sleep_for(20ms);
+          continue;
         }
     }
+#endif
 
     if (!result.ok())
     {

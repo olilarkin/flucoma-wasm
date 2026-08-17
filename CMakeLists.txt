@@ -59,9 +59,14 @@ include(flucoma_version)
 include(flucoma-buildtools)
 include(flucoma-buildtype)
 
-set_if_toplevel(VAR FLUCOMA_CLI_RUNTIME_OUTPUT_DIRECTORY 
-                TOPLEVEL "${CMAKE_CURRENT_SOURCE_DIR}/bin"
-              SUPERBUILD "${CMAKE_SOURCE_DIR}/cli_binaries/${CMAKE_HOST_SYSTEM_NAME}/${CMAKE_HOST_SYSTEM_PROCESSOR}")
+# An explicit -DFLUCOMA_CLI_RUNTIME_OUTPUT_DIRECTORY=... wins; otherwise fall
+# back to the usual toplevel/superbuild choice. The WebAssembly build
+# (scripts/build-wasm.sh) uses this to emit its modules straight into wasm/.
+if(NOT FLUCOMA_CLI_RUNTIME_OUTPUT_DIRECTORY)
+  set_if_toplevel(VAR FLUCOMA_CLI_RUNTIME_OUTPUT_DIRECTORY
+                  TOPLEVEL "${CMAKE_CURRENT_SOURCE_DIR}/bin"
+                SUPERBUILD "${CMAKE_SOURCE_DIR}/cli_binaries/${CMAKE_HOST_SYSTEM_NAME}/${CMAKE_HOST_SYSTEM_PROCESSOR}")
+endif()
 
 if(DOCS)
   if(FLUID_DOCS_PATH)

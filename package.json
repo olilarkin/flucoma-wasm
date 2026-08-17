@@ -1,0 +1,63 @@
+{
+  "name": "flucoma-wasm",
+  "version": "0.1.0",
+  "description": "The FluCoMa (Fluid Corpus Manipulation) audio analysis, slicing and decomposition tools compiled to WebAssembly, for Node.js and the browser.",
+  "type": "module",
+  "main": "./src/index.js",
+  "module": "./src/index.js",
+  "types": "./index.d.ts",
+  "bin": {
+    "fluid": "./bin/fluid.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./wav": "./src/wav.js",
+    "./interop": "./src/interop.js",
+    "./catalog": "./src/catalog.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "wasm/",
+    "index.d.ts",
+    "README.md",
+    "LICENSE.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build:wasm": "bash scripts/build-wasm.sh",
+    "catalog": "node scripts/harvest-catalog.mjs",
+    "build": "npm run build:wasm && npm run catalog",
+    "test": "node test/catalog.mjs && node test/wav.mjs && node test/run.mjs && node test/interop.mjs && node test/cli.mjs",
+    "typecheck": "npx -y --package typescript@5.7 tsc --project tsconfig.json"
+  },
+  "keywords": [
+    "flucoma",
+    "audio",
+    "dsp",
+    "wasm",
+    "webassembly",
+    "mfcc",
+    "onset-detection",
+    "segmentation",
+    "nmf",
+    "hpss",
+    "music-information-retrieval",
+    "corpus"
+  ],
+  "author": "Oliver Larkin",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/olilarkin/flucoma-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/olilarkin/flucoma-cli/issues"
+  },
+  "homepage": "https://www.flucoma.org/"
+}
