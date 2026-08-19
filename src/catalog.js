@@ -8,6 +8,7 @@ export const CATALOG = {
     "program": "fluid-ampfeature",
     "client": "BufAmpFeature",
     "header": "flucoma/clients/rt/AmpFeatureClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/ampfeature/",
     "inputs": [
       "source"
     ],
@@ -124,6 +125,7 @@ export const CATALOG = {
     "program": "fluid-ampgate",
     "client": "BufAmpGate",
     "header": "flucoma/clients/rt/AmpGateClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/ampgate/",
     "inputs": [
       "source"
     ],
@@ -295,6 +297,7 @@ export const CATALOG = {
     "program": "fluid-ampslice",
     "client": "BufAmpSlice",
     "header": "flucoma/clients/rt/AmpSliceClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/ampslice/",
     "inputs": [
       "source"
     ],
@@ -440,6 +443,7 @@ export const CATALOG = {
     "program": "fluid-audiotransport",
     "client": "BufAudioTransport",
     "header": "flucoma/clients/rt/AudioTransportClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/audiotransport/",
     "inputs": [
       "sourceA",
       "sourceB"
@@ -565,6 +569,7 @@ export const CATALOG = {
     "program": "fluid-chroma",
     "client": "BufChroma",
     "header": "flucoma/clients/rt/ChromaClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/chroma/",
     "inputs": [
       "source"
     ],
@@ -701,6 +706,7 @@ export const CATALOG = {
     "program": "fluid-hpss",
     "client": "BufHPSS",
     "header": "flucoma/clients/rt/HPSSClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/hpss/",
     "inputs": [
       "source"
     ],
@@ -835,6 +841,7 @@ export const CATALOG = {
     "program": "fluid-loudness",
     "client": "BufLoudness",
     "header": "flucoma/clients/rt/LoudnessClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/loudness/",
     "inputs": [
       "source"
     ],
@@ -972,6 +979,7 @@ export const CATALOG = {
     "program": "fluid-melbands",
     "client": "BufMelBands",
     "header": "flucoma/clients/rt/MelBandsClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/melbands/",
     "inputs": [
       "source"
     ],
@@ -1109,6 +1117,7 @@ export const CATALOG = {
     "program": "fluid-mfcc",
     "client": "BufMFCC",
     "header": "flucoma/clients/rt/MFCCClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/mfcc/",
     "inputs": [
       "source"
     ],
@@ -1241,6 +1250,7 @@ export const CATALOG = {
     "program": "fluid-nmf",
     "client": "BufNMF",
     "header": "flucoma/clients/nrt/NMFClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/bufnmf/",
     "inputs": [
       "source"
     ],
@@ -1392,6 +1402,7 @@ export const CATALOG = {
     "program": "fluid-nmfcross",
     "client": "BufNMFCross",
     "header": "flucoma/clients/nrt/NMFCrossClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/bufnmfcross/",
     "inputs": [
       "source",
       "target"
@@ -1486,6 +1497,7 @@ export const CATALOG = {
     "program": "fluid-nmfseed",
     "client": "BufNMFSeed",
     "header": "flucoma/clients/nrt/NMFSeedClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/bufnmfseed/",
     "inputs": [
       "source"
     ],
@@ -1583,6 +1595,7 @@ export const CATALOG = {
     "program": "fluid-noveltyfeature",
     "client": "BufNoveltyFeature",
     "header": "flucoma/clients/rt/NoveltyFeatureClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/noveltyfeature/",
     "inputs": [
       "source"
     ],
@@ -1703,6 +1716,7 @@ export const CATALOG = {
     "program": "fluid-noveltyslice",
     "client": "BufNoveltySlice",
     "header": "flucoma/clients/rt/NoveltySliceClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/noveltyslice/",
     "inputs": [
       "source"
     ],
@@ -1828,6 +1842,7 @@ export const CATALOG = {
     "program": "fluid-onsetfeature",
     "client": "BufOnsetFeature",
     "header": "flucoma/clients/rt/OnsetFeatureClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/onsetfeature/",
     "inputs": [
       "source"
     ],
@@ -1955,6 +1970,7 @@ export const CATALOG = {
     "program": "fluid-onsetslice",
     "client": "BufOnsetSlice",
     "header": "flucoma/clients/rt/OnsetSliceClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/onsetslice/",
     "inputs": [
       "source"
     ],
@@ -2087,6 +2103,7 @@ export const CATALOG = {
     "program": "fluid-pitch",
     "client": "BufPitch",
     "header": "flucoma/clients/rt/PitchClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/pitch/",
     "inputs": [
       "source"
     ],
@@ -2229,6 +2246,7 @@ export const CATALOG = {
     "program": "fluid-sinefeature",
     "client": "BufSineFeature",
     "header": "flucoma/clients/rt/SineFeatureClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/sinefeature/",
     "inputs": [
       "source"
     ],
@@ -2378,6 +2396,7 @@ export const CATALOG = {
     "program": "fluid-sines",
     "client": "BufSines",
     "header": "flucoma/clients/rt/SinesClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/sines/",
     "inputs": [
       "source"
     ],
@@ -2549,6 +2568,7 @@ export const CATALOG = {
     "program": "fluid-spectralshape",
     "client": "BufSpectralShape",
     "header": "flucoma/clients/rt/SpectralShapeClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/spectralshape/",
     "inputs": [
       "source"
     ],
@@ -2703,6 +2723,7 @@ export const CATALOG = {
     "program": "fluid-stats",
     "client": "BufStats",
     "header": "flucoma/clients/nrt/BufStatsClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/bufstats/",
     "inputs": [
       "source",
       "weights"
@@ -2837,6 +2858,7 @@ export const CATALOG = {
     "program": "fluid-stft",
     "client": "BufSTFT",
     "header": "flucoma/clients/nrt/BufSTFTClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/bufstft/",
     "inputs": [
       "source"
     ],
@@ -2941,6 +2963,7 @@ export const CATALOG = {
     "program": "fluid-transients",
     "client": "BufTransients",
     "header": "flucoma/clients/rt/TransientClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/transients/",
     "inputs": [
       "source"
     ],
@@ -3083,6 +3106,7 @@ export const CATALOG = {
     "program": "fluid-transientslice",
     "client": "BufTransientSlice",
     "header": "flucoma/clients/rt/TransientSliceClient.hpp",
+    "docs": "https://learn.flucoma.org/reference/transientslice/",
     "inputs": [
       "source"
     ],

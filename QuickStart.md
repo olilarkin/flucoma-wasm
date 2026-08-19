@@ -27,7 +27,7 @@ fluid-nmf -source FULLPATHTOASOUND -components 5 -resynth ~/Desktop/components.w
 
 will put on the desktop a single 5-channel audio file with the resynthesised 5 components requested.
 
-4) an overview of the provided functions is available in the Fluid_Decomposition_Overview.md file, and an extensive documentation is available as a webpage in the /docs folder
+4) an overview of the provided functions is available in the Fluid_Decomposition_Overview.md file, and full reference documentation for every tool is online at https://learn.flucoma.org/reference/ - each tool links to its own page when called with -h
 
 #### Enjoy!
 
@@ -36,6 +36,6 @@ will put on the desktop a single 5-channel audio file with the resynthesised 5 c
 - only outputs WAV 32bit float files for now.
 - can't currently read some .wav files (with a WAVE EXTENSIBLE header)
 - does not support relative paths.
-- no man page yet: references needs to be taken from the provided documentation in /docs and only a one-liner description of parameters is provided with -h
+- no man page yet: -h gives a one-liner description of each parameter plus a link to the tool's reference page on https://learn.flucoma.org
 
 > This project has received funding from the European Research Council (ERC) under the European Union’s Horizon 2020 research and innovation programme (grant agreement No 725899).

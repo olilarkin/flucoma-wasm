@@ -255,6 +255,15 @@ async function runArgs(program, args) {
   return out;
 }
 
+// The reference page for the process, taken from the banner the program prints
+// itself (the build stamps it in — see make_doc_slug in MakeCLIStub.cmake), so
+// the catalog can't drift from what the program says. Programs built before
+// that landed print no URL, and their entries simply carry no `docs` field.
+function parseDocsURL(text) {
+  const m = /https:\/\/learn\.flucoma\.org\/reference\/[a-z0-9-]*\/?/.exec(text);
+  return m ? m[0] : undefined;
+}
+
 /** Options in declaration order: `-name<spaces>Display Name` per line. */
 function parseHelp(text) {
   const out = [];
@@ -325,7 +334,8 @@ for (const program of programs) {
   }
 
   const own = parseParams(headerPath);
-  const options = parseHelp(await runArgs(program, ['-help']));
+  const helpText = await runArgs(program, ['-help']);
+  const options = parseHelp(helpText);
   if (!options.length) {
     console.error(`!! ${program}: -help produced no options — skipping`);
     continue;
@@ -357,6 +367,7 @@ for (const program of programs) {
     program,
     client: info.client,
     header: info.header,
+    docs: parseDocsURL(helpText),
     inputs: params.filter((p) => p.type === 'inputBuffer').map((p) => p.name),
     outputs: params.filter((p) => p.type === 'buffer' || p.type === 'bufferArray').map((p) => p.name),
     params,

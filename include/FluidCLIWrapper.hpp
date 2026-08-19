@@ -412,6 +412,21 @@ public:
     std::cout << str1 << " " << str2 << "\n";
   }
 
+  // Every process has its own reference page on learn.flucoma.org, and the
+  // build knows which process this binary wraps: make_doc_slug() in
+  // scripts/MakeCLIStub.cmake turns the client name into the page's slug and
+  // passes it in. A build that doesn't define it gets the reference index
+  // rather than a guessed page that might 404.
+  static std::string docsURL()
+  {
+#ifdef FLUID_CLI_DOC_SLUG
+    return std::string("https://learn.flucoma.org/reference/") +
+           FLUID_CLI_DOC_SLUG + "/";
+#else
+    return "https://learn.flucoma.org/reference/";
+#endif
+  }
+
   static int run(index argc, const char* argv[])
   {
     ParamSetType params(descriptors(), FluidDefaultAllocator());
@@ -426,10 +441,10 @@ public:
       std::cout << "Fluid Corpus Manipulation Toolkit, version "
                 << fluidVersion() << '\n';
       std::cout << "Part of the Fluid Corpus Manipulation Project - "
-                   "http:://www.flucoma.org/\n";
-      std::cout
-          << "For a more detailed description of the available options than "
-             "given below, please see the accompanying HTML documentation.\n";
+                   "https://www.flucoma.org/\n";
+      std::cout << "For a more detailed description of the available options "
+                   "than given below, see\n  "
+                << docsURL() << '\n';
       std::cout << "Call with these options:\n";
       descriptors().template iterate<Help>();
       return 0;

@@ -28,6 +28,10 @@ for (const [name, entry] of Object.entries(CATALOG)) {
   ok(entry.inputs.length > 0, `${name} reads at least one input buffer`);
   ok(entry.outputs.length > 0, `${name} writes at least one output buffer`);
   ok(entry.client.startsWith('Buf'), `${name} names its FluCoMa client`);
+  // The URL comes from the program's own -help banner, so this checks the
+  // build stamped a plausible page in rather than that the page exists.
+  ok(/^https:\/\/learn\.flucoma\.org\/reference\/[a-z0-9]+\/$/.test(entry.docs || ''),
+    `${name} points at its reference page (got "${entry.docs}")`);
 
   for (const p of entry.params) {
     ok(VALID_TYPES.has(p.type), `${name}/${p.name} has a known type (got "${p.type}")`);

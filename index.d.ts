@@ -53,6 +53,12 @@ export interface CatalogEntry {
   client: string;
   /** Path of the declaring header within flucoma-core. */
   header: string;
+  /**
+   * The process's reference page, e.g.
+   * `https://learn.flucoma.org/reference/mfcc/`. Absent for programs built
+   * before the CLI started naming its own documentation page.
+   */
+  docs?: string;
   /** Names of the input buffer parameters. */
   inputs: string[];
   /** Names of the output buffer parameters. */

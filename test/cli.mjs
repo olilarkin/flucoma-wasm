@@ -50,6 +50,8 @@ try {
     ok(stdout.includes('-numcoeffs'), 'help lists the options');
     ok(stdout.includes('default'), 'help shows defaults');
     ok(stdout.includes('BufMFCC'), 'help names the FluCoMa client');
+    ok(stdout.includes('https://learn.flucoma.org/reference/mfcc/'),
+      'help links to the process\'s reference page');
   }
 
   {

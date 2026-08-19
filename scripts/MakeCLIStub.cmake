@@ -16,9 +16,31 @@ function(make_external_name client header output-var)
   set(${output-var} ${client} PARENT_SCOPE)
 endfunction() 
 
-function (add_cli_binary name source)
+# The reference pages on learn.flucoma.org are named after the process, not the
+# client class: one page documents both the real-time and the buffer version of
+# a process, so BufMFCC is documented at /reference/mfcc/. The processes below
+# have no real-time counterpart to share a page with, so theirs keep the buf
+# prefix (/reference/bufstats/, not /reference/stats/ — which is a different,
+# real-time-only process).
+set(FLUID_DOCS_KEEP_BUF_PREFIX BufNMF BufNMFCross BufNMFSeed BufStats BufSTFT)
+
+function(make_doc_slug client output-var)
+  if("${client}" IN_LIST FLUID_DOCS_KEEP_BUF_PREFIX)
+    set(slug ${client})
+  else()
+    string(REGEX REPLACE "^Buf" "" slug ${client})
+  endif()
+  string(TOLOWER ${slug} slug)
+  set(${output-var} ${slug} PARENT_SCOPE)
+endfunction()
+
+function (add_cli_binary name source doc_slug)
   
   add_executable(${name} ${source})
+
+  # Lets -help print a link to this tool's own reference page rather than a
+  # vague pointer at "the documentation". See docsURL() in FluidCLIWrapper.hpp.
+  target_compile_definitions(${name} PRIVATE FLUID_CLI_DOC_SLUG="${doc_slug}")
 
   # if(MSVC)
   #   foreach(flag_var
@@ -81,11 +103,13 @@ function(generate_cli_source)
   "${multiValues}"
   ${ARGN})  
   
+  list(GET ARG_CLIENTS 0 client_name)
+  list(GET ARG_HEADERS 0 header)
+  make_doc_slug(${client_name} doc_slug)
+
   if(ARG_FILENAME)
     set(external_name ${ARG_FILENAME})
   else()
-    list(GET ARG_CLIENTS 0 client_name)
-    list(GET ARG_HEADERS 0 header)
     make_external_name(${client_name} ${header} external_name)
   endif()
     
@@ -96,5 +120,5 @@ function(generate_cli_source)
   generate_source(${ARGN} EXTERNALS_OUT external FILE_OUT outfile)
   
   message(STATUS "Generating: ${external_name}")
-  add_cli_binary(${external_name} ${outfile})
+  add_cli_binary(${external_name} ${outfile} ${doc_slug})
 endfunction()

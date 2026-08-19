@@ -182,7 +182,8 @@ function cmdHelp(name) {
   const entry = describe(program);
   console.log(`\n${program}  (${entry.client}, ${kindOf(program)})`);
   console.log(`  reads:  ${entry.inputs.join(', ') || '(nothing)'}`);
-  console.log(`  writes: ${entry.outputs.join(', ') || '(nothing)'}\n`);
+  console.log(`  writes: ${entry.outputs.join(', ') || '(nothing)'}`);
+  console.log(`  docs:   ${entry.docs || 'https://learn.flucoma.org/reference/'}\n`);
   for (const p of entry.params) {
     const bits = [];
     if (p.type === 'inputBuffer') bits.push('input file');
