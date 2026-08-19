@@ -1,4 +1,4 @@
-// Type definitions for flucoma-wasm/interop
+// Type definitions for @olilarkin/flucoma-wasm/interop
 
 import type { Fluid, AudioInput, DecodedWav } from '../index.js';
 

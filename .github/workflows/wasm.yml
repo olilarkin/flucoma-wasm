@@ -1,10 +1,12 @@
 name: wasm
 
-# Builds the WebAssembly modules and runs the flucoma-wasm test suite.
+# CI for the @olilarkin/flucoma-wasm npm package: builds the WebAssembly modules from
+# source and runs the test suite on every push and pull request.
 #
-# The built modules are not committed (see .gitignore), so every job here builds
-# them from source first — which also means this workflow is what proves the
-# Emscripten build still works against the current flucoma-core.
+# The built modules are not committed (see .gitignore), so this is what proves
+# the Emscripten build still works against the current flucoma-core. The build
+# itself lives in build-npm-package.yml, shared with nightly.yaml and
+# release.yml.
 
 on:
   push:
@@ -17,56 +19,10 @@ on:
       - 'CMakeLists.txt'
       - 'package.json'
       - '.github/workflows/wasm.yml'
+      - '.github/workflows/build-npm-package.yml'
   pull_request:
   workflow_dispatch:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - uses: mymindstorm/setup-emsdk@v14
-        with:
-          version: 'latest'
-          actions-cache-folder: 'emsdk-cache'
-
-      # CMake fetches flucoma-core and its dependencies (Eigen, HISSTools,
-      # Spectra, foonathan/memory, fmt, json); caching them keeps the build off
-      # the network on repeat runs.
-      - name: Cache CMake dependencies
-        uses: actions/cache@v4
-        with:
-          path: build-wasm/_deps
-          key: wasm-deps-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
-          restore-keys: wasm-deps-${{ runner.os }}-
-
-      - name: Build the WebAssembly modules
-        run: npm run build:wasm
-
-      - name: Regenerate the catalog
-        run: npm run catalog
-
-      # The catalog is committed, and is generated from the built modules and
-      # the flucoma-core headers. If regenerating it changes anything, the
-      # checked-in copy no longer describes what the build produces.
-      - name: Check the committed catalog is up to date
-        run: |
-          if ! git diff --quiet -- src/catalog.js; then
-            echo "src/catalog.js is out of date — run 'npm run catalog' and commit the result." >&2
-            git diff --stat -- src/catalog.js >&2
-            exit 1
-          fi
-
-      - name: Test
-        run: npm test
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Check the package contents
-        run: npm pack --dry-run
+    uses: ./.github/workflows/build-npm-package.yml

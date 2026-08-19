@@ -1,4 +1,4 @@
-// Type definitions for flucoma-wasm
+// Type definitions for @olilarkin/flucoma-wasm
 
 export interface DecodedWav {
   sampleRate: number;

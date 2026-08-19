@@ -1,112 +1,76 @@
 name: nightly
 
+# Publishes a nightly build of the @olilarkin/flucoma-wasm npm package from main,
+# under the `nightly` dist-tag, so a plain install keeps resolving to the last
+# real release:
+#
+#   npm install @olilarkin/flucoma-wasm@nightly
+#
+# Requires an NPM_TOKEN secret: an npm automation token belonging to the
+# @olilarkin scope, with publish rights.
+
 on:
   workflow_dispatch:
   push:
     branches: [ main ]
 
 concurrency:
-  group: environment-${{ github.ref }}
+  group: nightly-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  windows:
-    runs-on: windows-latest
+  # A nightly needs a version npm has never seen. The base is whatever
+  # package.json is on its way to, with the prerelease part replaced rather than
+  # appended so re-running after a bump can't produce nested `-nightly` suffixes.
+  # The sha is prefixed with `g` (git-describe style) because a bare hex sha can
+  # start with a 0, and a numeric semver identifier may not have a leading zero.
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.compute.outputs.version }}
     steps:
-    - uses: actions/checkout@v3
-    - uses: flucoma/actions/env@main      
-    - uses: flucoma/actions/cli@main
-      with:
-        branch: origin/main
+      - uses: actions/checkout@v4
 
-    - name: compress archive
-      run: 7z a FluCoMa-CLI-Windows-x64-nightly.zip FluidCorpusManipulation
-      working-directory: release-packaging
+      - id: compute
+        run: |
+          base=$(node -p "require('./package.json').version.split('-')[0]")
+          version="$base-nightly.$(date -u +%Y%m%d%H%M).g${GITHUB_SHA::7}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "nightly version: $version"
 
-    - uses: actions/upload-artifact@v4.3.6
-      with:
-        name: winbuild
-        path: release-packaging/FluCoMa-CLI-Windows-x64-nightly.zip
-    
-  macos:
-    runs-on: macos-latest
+  build:
+    needs: version
+    uses: ./.github/workflows/build-npm-package.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
+
+  publish:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # for npm provenance
     steps:
-      - uses: actions/checkout@v3
-      - uses: flucoma/actions/env@main      
-      - uses: flucoma/actions/cli@main
+      - uses: actions/download-artifact@v4
         with:
-          branch: origin/main
+          name: npm-package
 
-      - name: sign binaries
-        uses: flucoma/actions/distribution@main
+      - uses: actions/setup-node@v4
         with:
-          glob: 'fluid -t x'
-          package: 'release-packaging'
-          codesign_options: 'runtime'
-          output_type: 'dmg'
-          output: FluCoMa-CLI-Mac-nightly
-          cert: ${{ secrets.CERT }}
-          certpwd: ${{ secrets.CERTPWD }}
-          teamid: ${{ secrets.WWDRTEAMID }}
-          apppwd: ${{ secrets.APPSTORECONNECTPWD }}
-          appusr: ${{ secrets.APPSTORECONNECTUSERNAME }}
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
 
-      - uses: actions/upload-artifact@v4.3.6
-        with:
-          name: macbuild
-          path: release-packaging/FluCoMa-CLI-Mac-nightly.dmg
-      
-  linux:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-      - uses: flucoma/actions/env@main
-      - uses: flucoma/actions/cli@main
-        with:
-          branch: origin/main
-
-      - name: compress archive
-        run: tar -zcvf FluCoMa-CLI-Linux-x64-nightly.tar.gz FluidCorpusManipulation
-        working-directory: release-packaging 
-        
-      - uses: actions/upload-artifact@v4.3.6
-        with:
-          name: linuxbuild
-          path: release-packaging/FluCoMa-CLI-Linux-x64-nightly.tar.gz
-      
-  release:
-    runs-on: ubuntu-22.04
-    needs: [windows, linux, macos]
-    steps:
-      - uses: actions/download-artifact@v4.1.7
-        with:
-          name: linuxbuild
-
-      - uses: actions/download-artifact@v4.1.7
-        with:
-          name: macbuild
-
-      - uses: actions/download-artifact@v4.1.7
-        with:
-          name: winbuild
-
-      - uses: dev-drprasad/delete-tag-and-release@v0.2.1
-        with:
-          delete_release: true # default: false
-          tag_name: nightly # tag name to delete
+      - name: Publish to npm under the nightly tag
+        run: npm publish "${{ needs.build.outputs.tarball }}" --tag nightly --provenance --access public
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: create release
-        uses: ncipollo/release-action@v1
-        with:
-          name: FluCoMa CLI Nightly Release
-          artifacts: "FluCoMa*"
-          body: "This is a nightly build of the FluCoMa CLI tools. As such, be warned there may be bugs or other unexpected behaviour. The build hash is ${{ github.sha }}"
-          tag: nightly
-          prerelease: true
-          draft: false
-          allowUpdates: true
-
-
-        
+      - name: Summary
+        run: |
+          {
+            echo "Published \`${{ needs.build.outputs.name }}@${{ needs.version.outputs.version }}\` to the \`nightly\` tag."
+            echo
+            echo '```'
+            echo "npm install ${{ needs.build.outputs.name }}@nightly"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

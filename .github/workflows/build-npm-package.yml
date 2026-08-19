@@ -1,0 +1,108 @@
+name: build npm package
+
+# Reusable build: compiles the WebAssembly modules, runs the test suite and
+# packs the npm tarball, uploading it as the `npm-package` artifact.
+#
+# wasm.yml (CI), nightly.yaml and release.yml all call this, so the tarball that
+# gets published is built and tested exactly the way CI builds and tests it —
+# there is no second, publish-only build path that can drift.
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: >-
+          Version to stamp into package.json before packing. Empty means pack the
+          committed version (what release.yml does); nightly.yaml passes a
+          prerelease version here.
+        type: string
+        required: false
+        default: ''
+    outputs:
+      name:
+        description: The npm package name that was packed.
+        value: ${{ jobs.build.outputs.name }}
+      version:
+        description: The version that was packed.
+        value: ${{ jobs.build.outputs.version }}
+      tarball:
+        description: Filename of the packed tarball inside the `npm-package` artifact.
+        value: ${{ jobs.build.outputs.tarball }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      name: ${{ steps.pack.outputs.name }}
+      version: ${{ steps.pack.outputs.version }}
+      tarball: ${{ steps.pack.outputs.tarball }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 'latest'
+          actions-cache-folder: 'emsdk-cache'
+
+      # CMake fetches flucoma-core and its dependencies (Eigen, HISSTools,
+      # Spectra, foonathan/memory, fmt, json); caching them keeps the build off
+      # the network on repeat runs.
+      - name: Cache CMake dependencies
+        uses: actions/cache@v4
+        with:
+          path: build-wasm/_deps
+          key: wasm-deps-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: wasm-deps-${{ runner.os }}-
+
+      - name: Build the WebAssembly modules
+        run: npm run build:wasm
+
+      - name: Regenerate the catalog
+        run: npm run catalog
+
+      # The catalog is committed, and is generated from the built modules and
+      # the flucoma-core headers. If regenerating it changes anything, the
+      # checked-in copy no longer describes what the build produces. Checked
+      # before the version stamp below, so the diff can only be the catalog.
+      - name: Check the committed catalog is up to date
+        run: |
+          if ! git diff --quiet -- src/catalog.js; then
+            echo "src/catalog.js is out of date — run 'npm run catalog' and commit the result." >&2
+            git diff --stat -- src/catalog.js >&2
+            exit 1
+          fi
+
+      - name: Test
+        run: npm test
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # The stamp is never committed — it only exists in this runner's checkout,
+      # long enough for npm pack to bake it into the tarball.
+      - name: Stamp the version
+        if: inputs.version != ''
+        run: npm version "${{ inputs.version }}" --no-git-tag-version --allow-same-version
+
+      - name: Pack
+        id: pack
+        run: |
+          tarball=$(npm pack --silent | tail -n1)
+          {
+            echo "tarball=$tarball"
+            echo "name=$(node -p "require('./package.json').name")"
+            echo "version=$(node -p "require('./package.json').version")"
+          } >> "$GITHUB_OUTPUT"
+          echo "packed $tarball"
+          tar -tzf "$tarball" | sort
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-package
+          path: ${{ steps.pack.outputs.tarball }}
+          if-no-files-found: error
+          retention-days: 14

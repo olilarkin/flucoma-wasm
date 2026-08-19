@@ -1,15 +1,10 @@
-# Fluid Corpus Manipulation: Command line interface
+# Fluid Corpus Manipulation: WASM / npm package
 
-This repository hosts code for generating the command line executables and documentation resources for the Fluid Corpus Manipulation Project. Much of the actual code that does the exciting stuff lives in this repository's principal dependency,  the [Fluid Corpus Manipulation Library](https://github.com/flucoma/flucoma-core).
-
-* A wrapper from our code that allows us to generate command-line executables from a generic class.
-* Stubs for producing an executable for each 'client' in the Fluid Corpus Manipulation Library.
-* CMake code for managing dependencies, building and packaging.
-* A WebAssembly build of the same programs, published to npm as **`flucoma-wasm`** — see below.
+A WebAssembly build of the [flucoma cli](https://github.com/flucoma/flucoma-cli), published to npm as **`@olilarkin/flucoma-wasm`** — see below.
 
 ---
 
-# `flucoma-wasm` — the npm package
+# `@olilarkin/flucoma-wasm` — the npm package
 
 The same command-line programs, compiled to WebAssembly, so they run in Node,
 in the browser and in Web Workers with no native binary and no install step.
@@ -20,13 +15,13 @@ built from, so the WebAssembly programs *are* the programs — same algorithms,
 same option grammar, same results.
 
 ```bash
-npm install flucoma-wasm
+npm install @olilarkin/flucoma-wasm
 ```
 
 ## Quick start
 
 ```js
-import { Fluid, encodeWav, decodeWav } from 'flucoma-wasm';
+import { Fluid, encodeWav, decodeWav } from '@olilarkin/flucoma-wasm';
 
 const fluid = new Fluid();
 
@@ -96,6 +91,14 @@ flucoma-core headers — so it can't drift from what actually shipped.
 
 ## Command line
 
+The package installs a single `fluid` entry point. With the package installed in
+the project, `npx fluid` finds it; to run it without installing anything, name
+the package explicitly:
+
+```bash
+npx -p @olilarkin/flucoma-wasm fluid list
+```
+
 ```bash
 npx fluid noveltyslice -source in.wav -indices slices.csv -threshold 0.4
 npx fluid mfcc         -source in.wav -features mfcc.csv  -numcoeffs 13 -1
@@ -128,7 +131,7 @@ checkout).
 
 ```js
 import { CDP } from 'cdp-wasm';
-import { Fluid } from 'flucoma-wasm';
+import { Fluid } from '@olilarkin/flucoma-wasm';
 
 const cdp = new CDP();
 const fluid = new Fluid();
@@ -139,10 +142,10 @@ const points = await fluid.slice('fluid-noveltyslice', bytes);
 
 **Where they complement each other is structure.** FluCoMa is good at finding
 and describing the interesting moments; CDP is good at transforming audio.
-`flucoma-wasm/interop` has the segment plumbing for that pipeline:
+`@olilarkin/flucoma-wasm/interop` has the segment plumbing for that pipeline:
 
 ```js
-import { mapSlices, describeSlices, cut, concat } from 'flucoma-wasm/interop';
+import { mapSlices, describeSlices, cut, concat } from '@olilarkin/flucoma-wasm/interop';
 
 // Slice with FluCoMa, transform each segment with CDP, reassemble
 const out = await mapSlices(fluid, wav, async (segment, i) => {
@@ -188,38 +191,6 @@ The programs are built single-threaded: `FluidCLIWrapper.hpp` runs the job on
 the calling thread under Emscripten rather than spawning one, so the modules
 need neither `SharedArrayBuffer` nor cross-origin isolation headers and drop
 into any page. Native builds are unaffected.
-
----
-
-# Minimal Quick Build
-
-Minimal build steps below. For detailed guidance see https://github.com/flucoma/flucoma-cli/wiki/Compiling
-
-## Prerequisites 
-
-* C++14 compliant compiler (clang, GCC or MSVC)
-* cmake 
-* make (or Ninja or XCode or VisualStudio)
-* git 
-* an internet connection 
-
-CMake will automatically download the dependencies needed
-
-```bash
-mkdir -p build && cd build
-cmake ..
-make install
-```
-
-This will assemble a package in `release-packaging`.
-
-Alternatively, flucoma-cli is now on the [AUR / Arch User Repository](https://aur.archlinux.org/packages/flucoma-cli-git/) and can now be compiled and downloaded by executing:
-
-```bash
-yay -S flucoma-cli-git
-```
-
-on Arch Linux and Manjaro (with thanks to @madskjeldgaard)
 
 ## Credits 
 #### FluCoMa core development team (in alphabetical order)

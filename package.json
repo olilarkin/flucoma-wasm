@@ -1,5 +1,5 @@
 {
-  "name": "flucoma-wasm",
+  "name": "@olilarkin/flucoma-wasm",
   "version": "0.1.0",
   "description": "The FluCoMa (Fluid Corpus Manipulation) audio analysis, slicing and decomposition tools compiled to WebAssembly, for Node.js and the browser.",
   "type": "module",
@@ -26,6 +26,9 @@
     "README.md",
     "LICENSE.md"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=18"
   },
@@ -54,10 +57,10 @@
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/olilarkin/flucoma-cli.git"
+    "url": "git+https://github.com/olilarkin/flucoma-wasm.git"
   },
   "bugs": {
-    "url": "https://github.com/olilarkin/flucoma-cli/issues"
+    "url": "https://github.com/olilarkin/flucoma-wasm/issues"
   },
   "homepage": "https://www.flucoma.org/"
 }

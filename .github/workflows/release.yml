@@ -1,114 +1,94 @@
 name: release
+
+# Publishes the @olilarkin/flucoma-wasm npm package at the version committed in
+# package.json, under the default `latest` dist-tag.
+#
+# Run it from the Actions tab, or push a `v<version>` tag matching package.json.
+# Bump the version in package.json and commit it first — the release is a
+# publish of what is committed, not a version bump of its own.
+#
+# Requires an NPM_TOKEN secret: an npm automation token belonging to the
+# @olilarkin scope, with publish rights.
+
 on:
   workflow_dispatch:
-  
+  push:
+    tags: [ 'v*' ]
+
 jobs:
-  windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: flucoma/actions/env@main
-      - uses: flucoma/actions/cli@main
-        with:
-          branch: origin/${{ github.ref_name }}
-          
-      - name: compress archive
-        run: 7z a FluCoMa-CLI-Windows-x64.zip FluidCorpusManipulation
-        working-directory: release-packaging
-
-      - uses: actions/upload-artifact@v4.3.6
-        with:
-          name: winbuild
-          path: release-packaging/FluCoMa-CLI-Windows-x64.zip
-
-  mac:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: flucoma/actions/env@main
-      - uses: flucoma/actions/cli@main
-        with:
-          branch: origin/${{ github.ref_name }} 
-
-      - name: sign binaries
-        uses: flucoma/actions/distribution@main
-        with:
-          glob: 'fluid -t x'
-          package: 'release-packaging'
-          codesign_options: 'runtime'
-          output_type: 'dmg'
-          output: FluCoMa-CLI-Mac
-          cert: ${{ secrets.CERT }}
-          certpwd: ${{ secrets.CERTPWD }}
-          teamid: ${{ secrets.WWDRTEAMID }}
-          apppwd: ${{ secrets.APPSTORECONNECTPWD }}
-          appusr: ${{ secrets.APPSTORECONNECTUSERNAME }}
-
-      - uses: actions/upload-artifact@v4.3.6
-        with:
-          name: macbuild
-          path: release-packaging/FluCoMa-CLI-Mac.dmg
-  
-  linux:
-    runs-on: ubuntu-22.04
+  # Fail before spending ~20 minutes on an Emscripten build that could never be
+  # published: npm versions are immutable, so a version already on the registry
+  # is a dead end whatever the tarball turns out to contain.
+  check:
+    runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.get-version.outputs.version }}
+      name: ${{ steps.version.outputs.name }}
+      version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: flucoma/actions/env@main
-      - uses: flucoma/actions/cli@main    
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
         with:
-          branch: origin/${{ github.ref_name }}
+          node-version: '20'
 
-      - name: compress archive
-        run: tar -zcvf FluCoMa-CLI-Linux-x64.tar.gz FluidCorpusManipulation
-        working-directory: release-packaging 
-        
-      - uses: actions/upload-artifact@v4.3.6
-        with:
-          name: linuxbuild
-          path: release-packaging/FluCoMa-CLI-Linux-x64.tar.gz
-          
-      - run: ls -r
+      # Read from package.json rather than hardcoded, so renaming the package
+      # never leaves this workflow checking the registry for the old name.
+      - id: version
+        run: |
+          echo "name=$(node -p "require('./package.json').name")" >> "$GITHUB_OUTPUT"
+          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
-      - id: get-version
-        run: echo "version=$(cat flucoma.version.rc)" >> $GITHUB_OUTPUT
-        working-directory: build/_deps/flucoma-core-src
+      - name: Check the tag matches package.json
+        if: github.ref_type == 'tag'
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          if [ "$tag" != "${{ steps.version.outputs.version }}" ]; then
+            echo "tag $GITHUB_REF_NAME does not match package.json version ${{ steps.version.outputs.version }}" >&2
+            exit 1
+          fi
 
-  release:
-    runs-on: ubuntu-22.04
-    needs: [mac, windows, linux]
+      - name: Check the version is not already published
+        run: |
+          pkg="${{ steps.version.outputs.name }}@${{ steps.version.outputs.version }}"
+          # `npm view` 404s for a package (or version) that does not exist yet,
+          # which is exactly the case we want to proceed in.
+          if npm view "$pkg" version >/dev/null 2>&1; then
+            echo "$pkg is already published — bump the version in package.json." >&2
+            exit 1
+          fi
+          echo "$pkg is not on the registry yet"
 
+  build:
+    needs: check
+    uses: ./.github/workflows/build-npm-package.yml
+
+  publish:
+    needs: [check, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # for npm provenance
     steps:
-      - uses: actions/download-artifact@v4.1.7
+      - uses: actions/download-artifact@v4
         with:
-          name: linuxbuild
+          name: npm-package
 
-      - uses: actions/download-artifact@v4.1.7
+      - uses: actions/setup-node@v4
         with:
-          name: macbuild
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
 
-      - uses: actions/download-artifact@v4.1.7
-        with:
-          name: winbuild
-      
-      #### UPLOAD RELEASE ####
-
-      - name: delete pre-existing release
-        uses: dev-drprasad/delete-tag-and-release@v0.2.1
-        with:
-          delete_release: true # default: false
-          tag_name: ${{ needs.linux.outputs.version }} # tag name to delete
+      - name: Publish to npm
+        run: npm publish "${{ needs.build.outputs.tarball }}" --provenance --access public
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: package and upload
-        uses: softprops/action-gh-release@v1
-        with:
-          name: ${{ needs.linux.outputs.version }}
-          body: "This is a release build of the FluCoMa CLI tools. The build hash is ${{ github.sha }}"
-          files: FluCoMa*
-          prerelease: true
-          tag_name: ${{ needs.linux.outputs.version }}
-          target_commitish: ${{ github.sha }}
-          draft: false
+      - name: Summary
+        run: |
+          {
+            echo "Published \`${{ needs.check.outputs.name }}@${{ needs.check.outputs.version }}\` to npm."
+            echo
+            echo '```'
+            echo "npm install ${{ needs.check.outputs.name }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
