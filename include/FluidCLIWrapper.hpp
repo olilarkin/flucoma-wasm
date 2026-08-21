@@ -150,14 +150,21 @@ private:
     return {};
   }
   
+  // mData is stored interleaved, i.e. (frames, channels), but BufferAdaptor's
+  // contract for allFrames() is (channels, frames) -- see MemoryBufferAdaptor,
+  // which stores the same way round and transposes here too. Clients only ever
+  // see this adaptor directly in synchronous builds (WebAssembly without
+  // pthreads); the threaded path hands them a MemoryBufferAdaptor copy, which
+  // is why an untransposed view went unnoticed.
   fluid::FluidTensorView<float, 2> allFrames() override
   {
-      return mData; 
+      return mData.transpose(); 
   }
   
   fluid::FluidTensorView<const float, 2> allFrames() const override
   {
-      return mData; 
+      fluid::FluidTensorSlice<2> desc(mData.descriptor());
+      return {desc.transpose(), mData.data()}; 
   }
   
   fluid::FluidTensorView<float, 1> samps(index channel) override

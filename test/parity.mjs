@@ -231,6 +231,63 @@ for (const program of programs) {
   }
 }
 
+section('fluid-stft inverse round trip');
+
+// The forward pass above only exercises the *write* side of the buffer adaptor's
+// (channels, frames) view. Inverting reads a magnitude and a phase buffer back
+// through the same view, and nothing else in the catalogue does — a program is
+// only run with its declared outputs, and -resynth stays empty unless -inverse
+// is set. So drive it by hand.
+{
+  const sourcePath = join(dir, 'stft-inv-source.wav');
+  writeFileSync(sourcePath, SOURCES.source);
+  const magPath = join(dir, 'stft-inv-magnitude.wav');
+  const phasePath = join(dir, 'stft-inv-phase.wav');
+  const nativeResynth = join(dir, 'stft-inv-resynth-native.wav');
+
+  try {
+    runNative('fluid-stft', ['-source', sourcePath, '-magnitude', magPath, '-phase', phasePath]);
+    runNative('fluid-stft', ['-inverse', '1', '-magnitude', magPath, '-phase', phasePath,
+                             '-resynth', nativeResynth]);
+  } catch (e) {
+    ok(false, `fluid-stft -inverse: native run failed — ${e.message.split('\n')[0]}`);
+  }
+
+  if (existsSync(nativeResynth)) {
+    const mag = readFileSync(magPath);
+    const phase = readFileSync(phasePath);
+    const wasm = await runWasm('fluid-stft', {
+      argv: ['-inverse', '1', '-magnitude', magPath, '-phase', phasePath,
+             '-resynth', join(dir, 'stft-inv-resynth-wasm.wav')],
+      inputs: { [magPath]: mag, [phasePath]: phase },
+      outputs: { resynth: join(dir, 'stft-inv-resynth-wasm.wav') },
+    });
+
+    const native = decodeWav(readFileSync(nativeResynth));
+    if (!wasm.resynth) {
+      ok(false, 'fluid-stft -inverse: wasm wrote no resynthesis');
+    } else {
+      const { worst, problem } = compare(native, wasm.resynth);
+      if (problem) ok(false, `fluid-stft -inverse -resynth: ${problem}`);
+      else ok(worst <= TOL,
+        `fluid-stft -inverse -resynth matches native (max diff ${worst.toExponential(2)})`);
+    }
+
+    // Both builds agreeing is not enough here: a view that reads the spectrogram
+    // the wrong way round would be wrong identically on both. Analysis followed
+    // by resynthesis has to give the input back.
+    const source = decodeWav(SOURCES.source);
+    const a = source.channelData[0];
+    const b = native.channelData[0];
+    let drift = 0;
+    for (let i = 0, n = Math.min(a.length, b.length); i < n; i++) {
+      drift = Math.max(drift, Math.abs(a[i] - b[i]));
+    }
+    ok(drift <= 1e-5,
+      `fluid-stft analysis then resynthesis reconstructs the source (max diff ${drift.toExponential(2)})`);
+  }
+}
+
 section('help and version text');
 
 // The regex the CLI wrapper used for these was replaced with plain string
