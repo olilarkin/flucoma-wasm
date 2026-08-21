@@ -51,12 +51,32 @@ jobs:
       # CMake fetches flucoma-core and its dependencies (Eigen, HISSTools,
       # Spectra, foonathan/memory, fmt, json); caching them keeps the build off
       # the network on repeat runs.
+      #
+      # The `v2` in the key retires the caches saved before the repository was
+      # renamed — see the guard below for why they are unusable.
       - name: Cache CMake dependencies
         uses: actions/cache@v4
         with:
           path: build-wasm/_deps
-          key: wasm-deps-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
-          restore-keys: wasm-deps-${{ runner.os }}-
+          key: wasm-deps-v2-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: wasm-deps-v2-${{ runner.os }}-
+
+      # FetchContent bakes absolute paths into _deps/*-subbuild/CMakeCache.txt,
+      # and the workspace path contains the repository name. A cache restored
+      # from a run under a different name (flucoma-cli -> flucoma-wasm) therefore
+      # makes CMake abort with "The current CMakeCache.txt directory ... is
+      # different than the directory ... where CMakeCache.txt was created".
+      # Dropping the restored tree costs one clean fetch; the alternative is a
+      # red build that no re-run can clear.
+      - name: Discard the dependency cache if it was configured elsewhere
+        run: |
+          [ -d build-wasm/_deps ] || exit 0
+          stale=$(grep -rh --include=CMakeCache.txt '^CMAKE_CACHEFILE_DIR:INTERNAL=' build-wasm/_deps \
+                  | grep -cv "^CMAKE_CACHEFILE_DIR:INTERNAL=$GITHUB_WORKSPACE/") || true
+          if [ "${stale:-0}" -gt 0 ]; then
+            echo "$stale cached CMake cache(s) were configured under a different path — discarding"
+            rm -rf build-wasm/_deps
+          fi
 
       - name: Build the WebAssembly modules
         run: npm run build:wasm

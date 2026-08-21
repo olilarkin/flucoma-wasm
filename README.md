@@ -1,12 +1,12 @@
 # Fluid Corpus Manipulation: WASM / npm package
 
-A WebAssembly build of the [flucoma cli](https://github.com/flucoma/flucoma-cli), published to npm as **`@olilarkin/flucoma-wasm`** — see below.
+A WebAssembly port of [flucoma cli](https://github.com/flucoma/flucoma-cli), published to npm as **`@olilarkin/flucoma-wasm`** — see below.
 
 ---
 
-# `@olilarkin/flucoma-wasm` — the npm package
+## `@olilarkin/flucoma-wasm` — the npm package
 
-The same command-line programs, compiled to WebAssembly, so they run in Node,
+The flucoma command-line programs, compiled to WebAssembly, so they run in Node,
 in the browser and in Web Workers with no native binary and no install step.
 
 This is not a reimplementation. The build (`scripts/build-wasm.sh`) reuses this

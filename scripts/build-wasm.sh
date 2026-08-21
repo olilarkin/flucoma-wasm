@@ -14,7 +14,8 @@
 # drift.
 #
 # Requires an activated Emscripten SDK (source emsdk_env.sh).
-# Output: wasm/<program>.js + <program>.wasm, plus wasm/manifest.json.
+# Output: wasm/<program>.wasm per program, one shared wasm/fluid-runtime-*.js
+# per distinct JS runtime, and wasm/manifest.json mapping between them.
 #
 # Environment:
 #   FLUID_PATH        path to a flucoma-core checkout (else CMake fetches it)
@@ -28,10 +29,11 @@ OUT="${FLUCOMA_WASM_OUT:-$PKG/wasm}"
 BUILD="$PKG/build-wasm"
 JOBS="${FLUCOMA_WASM_JOBS:-$( (command -v nproc >/dev/null && nproc) || sysctl -n hw.ncpu 2>/dev/null || echo 4 )}"
 
-# manifest.json is written only at the very end. A build that dies partway would
-# otherwise leave the previous run's manifest advertising modules this run never
-# produced — the wrapper trusts the manifest, so that mismatch surfaces much
-# later as an unhelpful "cannot find module" at runtime.
+# manifest.json is written only at the very end (by scripts/share-glue.mjs). A
+# build that dies partway would otherwise leave the previous run's manifest
+# advertising modules this run never produced — the wrapper trusts the manifest,
+# so that mismatch surfaces much later as an unhelpful "cannot find module" at
+# runtime.
 trap 'rc=$?; if [ $rc -ne 0 ]; then
   echo "" >&2
   echo ">> BUILD FAILED (exit $rc) — $OUT/manifest.json was NOT regenerated and may" >&2
@@ -54,12 +56,15 @@ COMPAT="$PKG/scripts/wasm/emscripten-compat.h"
 # overflow the small default stack and trap. FORCE_FILESYSTEM stages files
 # through MEMFS so one .wasm serves Node, the browser and Workers.
 # INVOKE_RUN=0 + EXIT_RUNTIME=0 let the wrapper call main() repeatedly-ish via
-# callMain() rather than at module load.
+# callMain() rather than at module load. --closure 1 halves the JS glue
+# (61 KB -> 30 KB); the runtime methods the wrapper needs are named in
+# EXPORTED_RUNTIME_METHODS, so Closure keeps them.
 LINKFLAGS="-s MODULARIZE=1 -s EXPORT_ES6=1 -s EXPORT_NAME=createFluidModule \
   -s INVOKE_RUN=0 -s EXIT_RUNTIME=0 -s FORCE_FILESYSTEM=1 \
   -s ALLOW_MEMORY_GROWTH=1 -s INITIAL_MEMORY=67108864 -s STACK_SIZE=8388608 \
   -s ENVIRONMENT=web,worker,node \
-  -s EXPORTED_RUNTIME_METHODS=callMain,FS"
+  -s EXPORTED_RUNTIME_METHODS=callMain,FS \
+  --closure 1"
 
 CMAKE_ARGS=(
   -DCMAKE_BUILD_TYPE=Release
@@ -73,7 +78,7 @@ CMAKE_ARGS=(
 mkdir -p "$OUT"
 # Drop stale modules so a target that stops building can't leave an old artifact
 # behind for the manifest check (and the tests) to pass against.
-rm -f "$OUT"/*.js "$OUT"/*.wasm
+rm -f "$OUT"/*.js "$OUT"/*.wasm "$OUT"/manifest.json
 
 echo ">> configuring (emcmake cmake)"
 mkdir -p "$BUILD"
@@ -106,16 +111,11 @@ if [ ${#built[@]} -eq 0 ]; then
   exit 1
 fi
 
-# The manifest is the wrapper's source of truth for "which programs exist".
-{
-  printf '{\n  "programs": [\n'
-  for i in "${!built[@]}"; do
-    sep=','; [ "$i" -eq $((${#built[@]} - 1)) ] && sep=''
-    printf '    "%s"%s\n' "${built[$i]}" "$sep"
-  done
-  printf '  ]\n}\n'
-} > "$OUT/manifest.json"
-
-echo ">> wrote manifest.json (${#built[@]} programs)"
+# Emscripten writes a copy of its ~30 KB JS runtime next to every module, and
+# those copies are identical apart from the .wasm filename they load. This
+# collapses them to one file per distinct runtime and writes the manifest —
+# which is both the wrapper's source of truth for "which programs exist" and
+# the map from a program to the runtime file it was linked against.
+node "$PKG/scripts/share-glue.mjs" "$OUT" "${built[@]}"
 echo
 echo "Built ${#built[@]} program(s) into $OUT"

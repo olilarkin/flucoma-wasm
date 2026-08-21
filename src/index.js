@@ -89,7 +89,8 @@ export class Fluid {
           text = await res.text();
         }
         const m = JSON.parse(text);
-        return { programs: Array.isArray(m) ? m : m.programs || [] };
+        if (Array.isArray(m)) return { programs: m, runtime: null };
+        return { programs: m.programs || [], runtime: m.runtime || null };
       })();
     }
     return this._manifestP;
@@ -130,6 +131,10 @@ export class Fluid {
     const factory = await this._factory(program);
     const Module = await factory({
       noInitialRun: true,
+      // One runtime file serves many programs, so which .wasm to instantiate is
+      // this call's decision rather than something baked into the glue.
+      locateFile: (path) =>
+        path.endsWith('.wasm') ? new URL(`${program}.wasm`, this._baseUrl).href : path,
       print: (s) => { stdout += s + '\n'; },
       printErr: (s) => { stderr += s + '\n'; },
     });
@@ -275,13 +280,22 @@ export class Fluid {
     return out;
   }
 
+  /**
+   * The Emscripten JS runtime a program was linked against. The build shares
+   * one file between every program with an identical runtime (see
+   * scripts/share-glue.mjs) and records the pairing in manifest.json, so the
+   * factory is cached per runtime file rather than per program. Builds made
+   * before that sharing existed have no `runtime` map; fall back to the
+   * per-program file those produced.
+   */
   async _factory(program) {
-    if (!this._factories.has(program)) {
-      const url = new URL(`${program}.js`, this._baseUrl).href;
-      const mod = await import(/* @vite-ignore */ url);
-      this._factories.set(program, mod.default);
+    const { runtime } = await this._manifest();
+    const file = runtime?.[program] ?? `${program}.js`;
+    if (!this._factories.has(file)) {
+      const url = new URL(file, this._baseUrl).href;
+      this._factories.set(file, import(/* @vite-ignore */ url).then((m) => m.default));
     }
-    return this._factories.get(program);
+    return this._factories.get(file);
   }
 }
 

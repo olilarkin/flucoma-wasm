@@ -24,7 +24,7 @@ under the European Union’s Horizon 2020 research and innovation programme
 #include <iomanip>
 #include <iostream>
 #include <sstream>
-#include <regex>
+#include <cstring>
 #include <string>
 #include <thread>
 #include <utility>
@@ -433,10 +433,14 @@ public:
     FlagsType    flags;
     flags.fill(false);
 
-    const std::regex help("(-*)h(elp)?");
-    const std::regex version("(-*)v(ersion)?");
-    std::cmatch      m;
-    if (argc > 1 && std::regex_match(argv[1], m, help))
+    // Was two std::regex matches ("(-*)h(elp)?" / "(-*)v(ersion)?"). Same
+    // grammar, without linking libc++'s regex engine into every program.
+    auto isFlag = [](const char* arg, const char* name) {
+      while (*arg == '-') ++arg;
+      if (arg[0] != name[0]) return false;
+      return arg[1] == '\0' || std::strcmp(arg, name) == 0;
+    };
+    if (argc > 1 && isFlag(argv[1], "help"))
     {
       std::cout << "Fluid Corpus Manipulation Toolkit, version "
                 << fluidVersion() << '\n';
@@ -450,7 +454,7 @@ public:
       return 0;
     }
 
-    if (argc > 1 && std::regex_match(argv[1], m, version))
+    if (argc > 1 && isFlag(argv[1], "version"))
     {
       std::cout << "Fluid Corpus Manipulation Toolkit, version "
                 << fluidVersion() << '\n';
